@@ -1,127 +1,112 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <conio.h>
-struct Sotr // Сотрудник
+
+#include <windows.h>
+LRESULT CALLBACK WinFun(HWND, UINT, WPARAM, LPARAM);
+char WinName[]="Мое окно"; // Имя класса окна
+int WINAPI WinMain(HINSTANCE hIns, HINSTANCE hPrevIns, LPSTR arg, int WinMode) {
+HWND hwnd; // Дескриптор окна
+MSG msg; // Содержит инф. о сообщении, посылаемом Windows WNDCLASSEX wcl; // Определяет класс окна
+// Определение класса окна
+wcl.hInstance=hIns; // Дескриптор данного экземпляра wcl.lpszClassName=WinName; //Имя класса
+wcl.lpfnWndProc=WinFun; //Функция окна
+wcl.style=0; //стиль по умолчанию
+wcl.cbSize=sizeof(WNDCLASSEX); //Размер структуры wcl.hIcon=LoadIcon(NULL, IDI_APPLICATION); //Большая пиктограмма wcl.hIconSm=LoadIcon(NULL, IDI_WINLOGO); //Малая пиктограмма wcl.hCursor=LoadCursor(NULL, IDC_ARROW); //Форма курсора wcl.lpszMenuName=NULL; //Меню не используется
+wcl.cbClsExtra=0; // Дополнительная информация отсутствует wcl.cbWndExtra=0;
+// Фон окна задается белым wcl.hbrBackground=(HBRUSH)GetStockObject(WHITE_BRUSH);
+// Регистрация класса окна
+if (!RegisterClassEx(&wcl)) return 0;
+// Создание окна
+hwnd=CreateWindow(
+              WinName, // Имя класса окна
+              "Мое простое окно", // Заголовок
+              WS_OVERLAPPEDWINDOW, // Стандартное окно
+              CW_USEDEFAULT, // Координата X- определяется Windows
+              CW_USEDEFAULT, // Координата Y- определяется Windows
+              CW_USEDEFAULT, // ширина- определяется Windows
+              CW_USEDEFAULT, // высота- определяется Windows
+              HWND_DESKTOP, // Родительского окна нет
+              NULL, // Меню нет
+        hIns, // дескриптор данного экземпляра приложения
+              NULL); // дополнительных аргументов нет
+       // Отображение окна
+       ShowWindow(hwnd, WinMode);
+       UpdateWindow(hwnd);
+       // Цикл сообщений
+ 
+}
+while(GetMessage(&msg, NULL, 0, 0))
 {
-	char fio[64]; // ФИО
-	char date[16]; // Дата рождения
-	char dolg[32]; // Должность
-	double okl; // Оклад
+TranslateMessage(&msg); // Разрешает использование клавиатуры DispatchMessage(&msg);
+}
+return msg.wParam;
+// Эта функция вызывается Windows, которая передает ей сообщение
+// из очереди сообщений
+struct Line
+{
+       int x1, x2, y1, y2;
 };
-
-struct List // Список
+struct LineList // Список линий
 {
-	Sotr sotr; // Инф поле
-	List *pNext; // Указательна следующий элемент
+       Line L;
+       LineList *pNext;
 };
-
-// Функция добавления элемента в начало списка
-void addFirst(List *& pF, // Указатель на начало списка
-	List* p) // Указатель на добавляемый элемент
+LineList *pFirst=0, *p;
+void add(LineList *&pF, LineList *p)
+{ // Добавляем элемент в начало списка
+       p->pNext=pF;
+pF=p; }
+int x1, x2, y1, y2;
+HPEN pB, pW;
+LRESULT CALLBACK WinFun(HWND hwnd, UINT message,
+                                         WPARAM wParam, LPARAM lParam)
 {
-	p->pNext = pF;
-	pF = p;
+HDC hdc;
+       PAINTSTRUCT ps;
+       switch(message)
+       {
+       case WM_CREATE:
+              pB=(HPEN)GetStockObject(BLACK_PEN);
+pW=(HPEN)GetStockObject(WHITE_PEN);
+       break;
+case WM_RBUTTONDOWN:
+       x2=x1=LOWORD(lParam);
+       y2=y1=HIWORD(lParam);
+       break;
+case WM_MOUSEMOVE:
+if (wParam & MK_RBUTTON) // Определяем нажата ли правая кнопка мыши {
+              hdc=GetDC(hwnd);
+              SelectObject(hdc, pW);
+              MoveToEx(hdc, x1, y1, (LPPOINT)NULL);
+              LineTo(hdc, x2, y2);
+              x2=LOWORD(lParam);
+           y2=HIWORD(lParam);
+              SelectObject(hdc, pB);
+              MoveToEx(hdc, x1, y1, (LPPOINT)NULL);
+              LineTo(hdc, x2, y2);
+              ReleaseDC(hwnd, hdc);
 }
-// Удаление элемента из начала списка
-List * delFirst(List *&pF) // Функция возвращает указатель на удаляемый элемент
-{
-	if (pF == 0) return 0;
-	List *p = pF;
-	pF = pF->pNext;
-	return p;
-
+break;
+case WM_RBUTTONUP: // Отпускаем правую кнопку мыши
+       p=new LineList;
+       p->L.x1=x1; p->L.x2=x2;
+       p->L.y1=y1; p->L.y2=y2;
+       add(pFirst, p);
+       break;
+case WM_PAINT: // Перерисовка
+       hdc=BeginPaint(hwnd, &ps);
+       p=pFirst;
+       while(p)// Прсматриваем спикок и рисуем линии
+       {
+              MoveToEx(hdc, p->L.x1, p->L.y1, (LPPOINT)NULL);
+              LineTo(hdc, p->L.x2, p->L.y2);
+              p=p->pNext;
+       }
+       EndPaint(hwnd, &ps);
+       break;
+case WM_DESTROY: // Завершение программы
+       PostQuitMessage(0);
+break;
+default:
+// Позволяет Windows обрабатывать любые сообщения, // не указанные в предыдущем случае
+return DefWindowProc(hwnd, message, wParam, lParam);
 }
-// Добавление элемента перед заданным
-bool add(List *&pF, List * pZad, List *p)
-{
-	// Функция возвращает true при нормальном завершении и false в случае ошибки
-	if (pZad == pF) // Элемент будет первым
-	{
-		p->pNext = pF;
-		pF = p;
-		return true;
-	}
-
-	List *pPred = pF; // Указатель на предыдущий элемент перед pZad
-	while (pPred->pNext != pZad && pPred->pNext)
-		pPred = pPred->pNext;
-	if (pPred->pNext == 0) return false; // Элемента pZad нет в списке
-	p->pNext = pZad;
-	pPred->pNext = p;
-	return true;
-}
-// Удаление любого элемента p из списка
-List * del(List*& pF, List *p) // Функция возвращает указатель на удаленный элемент
-{
-	if (pF == 0) return 0;
-	if (pF == p) // Удаляем первый элемент
-	{
-		pF = pF->pNext;
-		return p;
-	}
-	else
-	{
-		List *pPred = pF; // Указатель на предыдущий элемент перед p
-		while (pPred->pNext != p && pPred->pNext)
-			pPred = pPred->pNext;
-		if (pPred->pNext == 0) return 0; // Элемента p нет в списке
-		pPred->pNext = p->pNext;
-		return p;
-	}
-	while (delFirst(pF)); // Очистка списка
-}
-
-int main(int argc, char* argv[])
-{
-	List *pF = 0; // Список пуст
-	List *p;
-	// Ввод списка
-	char Ch; // Переменная для ввода условия продолжения ввода
-	do
-	{
-		p = (List *)malloc(sizeof(List)); // Выделяем память под элемент
-		printf("\nFIO: ");
-		fflush(stdin); gets_s(p->sotr.fio, 63);
-		printf("Date: ");
-		fflush(stdin); gets_s(p->sotr.date, 15);
-		printf("Dolg: ");
-		fflush(stdin); gets_s(p->sotr.dolg, 31);
-		printf("Okl=");
-		fflush(stdin); scanf_s("%lf", &p->sotr.okl);
-		addFirst(pF, p); // Добавляем элемент в начало списка
-		printf("For continue press Y or y else any key! ");
-		Ch = _getche(); // Чтение кода клавиши с печатью символа
-	} while (Ch == 'Y' || Ch == 'y');
-	// Вывод спика
-	for (List *pi = pF; pi; pi = pi->pNext) // Просмотр списка
-		printf("\n%s %s %s oklad=%.2f", pi->sotr.fio, pi->sotr.date,
-		pi->sotr.dolg, pi->sotr.okl);
-
-	// Сортировка списка
-	for (List *pi = pF; pi->pNext;)
-	{
-		// Ищем минимальный элемент в списке
-		double min = pi->sotr.okl;
-		List *pmin = pi;
-		for (List *pj = pi->pNext; pj; pj = pj->pNext)
-			if (pj->sotr.okl<min)
-			{
-			min = pj->sotr.okl;
-			pmin = pj;
-			}
-		if (pi != pmin) // Минимальный элемент делаем первым, он будет перед pi
-		{
-			del(pF, pmin);
-			add(pF, pi, pmin);
-		}
-		else pi = pi->pNext;
-	}
-	// Печать списка после сортировки
-	printf("\nSrting:");
-	for (List *pi = pF; pi; pi = pi->pNext) // Просмотр списка
-		printf("\n%s %s %s oklad=%.2f", pi->sotr.fio, pi->sotr.date,
-		pi->sotr.dolg, pi->sotr.okl);
-	printf("\nFor exit press any key ");
-	system("pause"); // Останавливаем программу, ждем нажатия любой клавиши
-	return 0;
-}
+return 0; }
