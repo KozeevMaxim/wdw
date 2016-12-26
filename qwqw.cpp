@@ -1,108 +1,118 @@
-#include <windows.h> 
-LRESULT CALLBACK WinFun(HWND, UINT, WPARAM, LPARAM);
-char WinName[] = "Labaratory work #8";
-int WINAPI WinMain(HINSTANCE hIns, HINSTANCE hPrevIns, LPSTR arg, int WinMode)
+/*
+Лабораторная работа №8
+Алексей Шапран 
+Группа: ИУ8-14
+*/
+#include<windows.h>
+#include<string.h>
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+TCHAR szProgName[] = "Имя программы";
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
 {
-	HWND hwnd;
-	MSG msg;
-	WNDCLASSEX wcl;
-	wcl.hInstance = hIns;
-	wcl.lpszClassName = WinName;
-	wcl.lpfnWndProc = WinFun;
-	wcl.style = 0;
-	wcl.cbSize = sizeof(WNDCLASSEX);
-	wcl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wcl.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
-	wcl.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcl.lpszMenuName = NULL;
-	wcl.cbClsExtra = 0;
-	wcl.cbWndExtra = 0;
-	wcl.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-	if (!RegisterClassEx(&wcl)) return 0;
-	hwnd = CreateWindow(
-		WinName,
-		"Labaratory Work #8",
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		HWND_DESKTOP,
-		NULL,
-		hIns,
-		NULL);
-	ShowWindow(hwnd, WinMode);
-	UpdateWindow(hwnd);
-	while (GetMessage(&msg, NULL, 0, 0))
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+	HWND hWnd;
+	MSG lpMsg;
+	WNDCLASS w;
+
+	w.lpszClassName = szProgName; //имя программы - объявлено выше
+	w.hInstance = hInstance; //идентификатор текущего приложения
+	w.lpfnWndProc = WndProc; //указатель на функцию окна
+	w.hCursor = LoadCursor(NULL, IDC_ARROW); //загружаем курсор
+	w.hIcon = 0;
+	w.lpszMenuName = 0;
+	w.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH); //цвет фона окна
+	w.style = CS_HREDRAW | CS_VREDRAW;
+	w.cbClsExtra = 0;
+	w.cbWndExtra = 0;
+
+	//Если не удалось зарегистрировать класс окна - выходим
+	if (!RegisterClass(&w))
+		return 0;
+	//Создадим окно в памяти, заполнив аргументы CreateWindow
+	hWnd = CreateWindow(szProgName, //Имя программы
+		"Лабораторная работа №8 Вариант 23", //Заголовок окна
+		WS_OVERLAPPEDWINDOW, //Стиль окна - перекрывающееся
+		100, //положение окна на экране по х
+		100, //положение по у
+		500, //ширина
+		300, //высота
+		(HWND)NULL, //идентификатор родительского окна
+		(HMENU)NULL, //идентификатор меню
+		(HINSTANCE)hInstance, //идентификатор экземпляра программы
+		(HINSTANCE)NULL); //отсутствие дополнительных параметров
+
+						  //Выводим окно из памяти на экран
+	ShowWindow(hWnd, nCmdShow);
+	//Обновим содержимое окна
+	UpdateWindow(hWnd);
+
+	//Цикл обработки сообщений
+
+	while (GetMessage(&lpMsg, NULL, 0, 0)) {
+		TranslateMessage(&lpMsg);
+		DispatchMessage(&lpMsg);
 	}
-	return msg.wParam;
+	return(lpMsg.wParam);
 }
-struct Print
-{
-	int x1, x2, y1, y2;
-};
-struct PrintList
-{
-	Print L;
-	PrintList *pNext;
-};
-PrintList *pFirst = 0, *p;
-void add(PrintList *&pF, PrintList *p)
-{ 
-	p->pNext = pF;
-	pF = p;
-}
-int x1, x2, y1, y2;
-HPEN pB, pW;
-LRESULT CALLBACK WinFun(HWND hwnd, UINT message,
+
+//Функция окна
+LRESULT CALLBACK WndProc(HWND hWnd, UINT messg,
 	WPARAM wParam, LPARAM lParam)
 {
-	HDC hdc;
-	PAINTSTRUCT ps;
-	switch (message)
+	HDC hdc; //создаём контекст устройства
+	PAINTSTRUCT ps; //создаём экземпляр структуры графического вывода
+	LOGFONT lf;
+	HFONT hFont;
+	RECT r;
+	HBRUSH hBrush;
+	HPEN hPen;
+
+	//Цикл обработки сообщений
+	switch (messg)
 	{
-	case WM_LBUTTONDOWN:
-		x2 = x1 = LOWORD(lParam);
-		y2 = y1 = HIWORD(lParam);
+		//сообщение рисования
+	case WM_PAINT:
+		hdc = BeginPaint(hWnd, &ps);
+		//рисуем овал
+		hBrush = CreateHatchBrush(HS_CROSS, RGB(8, 114, 255));
+		hPen = CreatePen(PS_DASHDOT, 1, RGB(255, 38, 77));
+		SelectObject(hdc, hBrush);
+		SelectObject(hdc, hPen);
+		Ellipse(hdc, 20, 100, 200, 200);
+		ValidateRect(hWnd, NULL);
+		EndPaint(hWnd, &ps);
 		break;
 	case WM_MOUSEMOVE:
-		if (wParam & MK_LBUTTON)
+		if (wParam & MK_RBUTTON) // Нажата правая клавиша
 		{
-			x1 = LOWORD(lParam);
-			y1 = HIWORD(lParam);
-			hdc = GetDC(hwnd);
-			HPEN pen = CreatePen(PS_DASHDOT, 1, RGB(255, 0, 0));;
-			HBRUSH br = CreateHatchBrush(HS_CROSS, RGB(0, 0, 255));
+			int x, y;
+			x = LOWORD(lParam);
+			y = HIWORD(lParam);
+			hdc = GetDC(hWnd);
+			HPEN pen = CreatePen(PS_SOLID, 5, RGB(255, 66, 148));
+			HBRUSH br = CreateSolidBrush(RGB(0, 243, 255));
 			SelectObject(hdc, pen);
 			SelectObject(hdc, br);
-			Rectangle(hdc, x1, y1, x2, y2);
+			Ellipse(hdc, x - 10, y - 10, x + 10, y + 10);
 			DeleteObject(pen);
 			DeleteObject(br);
-			ReleaseDC(hwnd, hdc);
+			ReleaseDC(hWnd, hdc);
 		}
-		EndPaint(hwnd, &ps);
-		break;
-	case WM_PAINT: 
-		hdc = BeginPaint(hwnd, &ps);
-		p = pFirst;
-		while (p)
-		{
-			MoveToEx(hdc, p->L.x1, p->L.y1, (LPPOINT)NULL);
-			LineTo(hdc, p->L.x2, p->L.y2);
-			p = p->pNext;
-		}
-		EndPaint(hwnd, &ps);
-		
+
+
 		break;
 
-	case WM_DESTROY: 
-		PostQuitMessage(0);
+
+		//сообщение выхода - разрушение окна
+	case WM_DESTROY:
+		PostQuitMessage(0); //Посылаем сообщение выхода с кодом 0 - нормальное завершение
+		//DeleteObject(hPen);
+		//DeleteObject(hBrush);
 		break;
+
 	default:
-		return DefWindowProc(hwnd, message, wParam, lParam);
+		return(DefWindowProc(hWnd, messg, wParam, lParam)); //освобождаем очередь приложения от нераспознаных
 	}
 	return 0;
 }
