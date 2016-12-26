@@ -63,8 +63,9 @@ void add(ellList *&pF, ellList *p)
 }
 
 
-HPEN pen = CreatePen(PS_DASH, 1, RGB(0, 0, 255));;
-HBRUSH br = CreateHatchBrush(HS_VERTICAL, RGB(255, 0, 0));
+HPEN pen = CreatePen(PS_DASHDOT, 1, RGB(255, 0, 0));;
+HBRUSH br = CreateHatchBrush(HS_CROSS, RGB(0, 0, 255));
+
 
 LRESULT CALLBACK WinFun(HWND hwnd, UINT message,
 	WPARAM wParam, LPARAM lParam)
@@ -98,8 +99,8 @@ LRESULT CALLBACK WinFun(HWND hwnd, UINT message,
 		{
 			hdc = GetDC(hwnd);
 			SelectObject(hdc, pen);
-			SelectObject(hdc, br);			
-			Ellipse(hdc, p->L.x-50, p->L.y-50, p->L.x+50, p->L.y+50);
+			SelectObject(hdc, br);
+			Ellipse(hdc, p->L.x - 50, p->L.y - 50, p->L.x + 50, p->L.y + 50);
 			p = p->pNext;
 		}
 		EndPaint(hwnd, &ps);
