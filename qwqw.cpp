@@ -1,70 +1,76 @@
-#include "stdafx.h"
-
 #include <windows.h> 
+#include "stdafx.h"
 LRESULT CALLBACK WinFun(HWND, UINT, WPARAM, LPARAM);
-char WinName[] = "My window";
+char WinName[] = "Window";
 int WINAPI WinMain(HINSTANCE hIns, HINSTANCE hPrevIns, LPSTR arg, int WinMode)
 {
-	HWND hwnd;
-	MSG msg;
-	WNDCLASSEX wcl;
-	wcl.hInstance = hIns;
-	wcl.lpszClassName = WinName;
+	HWND hwnd; 
+	MSG msg;  
+	WNDCLASSEX wcl; 
+				
+	wcl.hInstance = hIns;  
+	wcl.lpszClassName = WinName;  
 	wcl.lpfnWndProc = WinFun;
-	wcl.style = 0;
-	wcl.cbSize = sizeof(WNDCLASSEX);
-	wcl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wcl.style = 0; 
+	wcl.cbSize = sizeof(WNDCLASSEX); 
+	wcl.hIcon = LoadIcon(NULL, IDI_APPLICATION); 
 	wcl.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
-	wcl.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcl.lpszMenuName = NULL;
-	wcl.cbClsExtra = 0;
+	wcl.hCursor = LoadCursor(NULL, IDC_ARROW);  
+	wcl.lpszMenuName = NULL; 
+	wcl.cbClsExtra = 0;  
 	wcl.cbWndExtra = 0;
+
 	wcl.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+
 	if (!RegisterClassEx(&wcl)) return 0;
+	
 	hwnd = CreateWindow(
-		WinName,
-		"lab8",
+		WinName, 
+		"Title", 
 		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		HWND_DESKTOP,
-		NULL,
-		hIns,
-		NULL);
+		CW_USEDEFAULT,  
+		CW_USEDEFAULT, 
+		CW_USEDEFAULT, 
+		CW_USEDEFAULT,  
+		HWND_DESKTOP, 
+		NULL, 
+		hIns, 
+		NULL); 
+			  
 	ShowWindow(hwnd, WinMode);
 	UpdateWindow(hwnd);
+	
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		TranslateMessage(&msg);
+		TranslateMessage(&msg); 
 		DispatchMessage(&msg);
 	}
 	return msg.wParam;
 }
 
-struct ell
+
+struct coord
 {
-	int x, y;
+	int x1, x2, y1, y2;
 };
 
-struct ellList
+struct coordList // Список линий 
 {
-	ell L;
-	ellList *pNext;
+	coord L;
+	coordList *pNext;
 };
 
-ellList *pFirst = 0, *p;
+coordList *pFirst = 0, *p;
 
-void add(ellList *&pF, ellList *p)
-{
+void add(coordList *&pF, coordList *p)
+{ 
 	p->pNext = pF;
 	pF = p;
 }
 
-
-HPEN pen = CreatePen(PS_DASH, 1, RGB(0, 0, 255));;
-HBRUSH br = CreateHatchBrush(HS_VERTICAL, RGB(255, 0, 0));
+int x1, x2, y1, y2;
+HPEN pB;
+HBRUSH pW;
 
 LRESULT CALLBACK WinFun(HWND hwnd, UINT message,
 	WPARAM wParam, LPARAM lParam)
@@ -74,40 +80,43 @@ LRESULT CALLBACK WinFun(HWND hwnd, UINT message,
 	switch (message)
 	{
 	case WM_MOUSEMOVE:
-		if (wParam & MK_RBUTTON)
+		if (wParam & MK_RBUTTON)  
 		{
 			int x, y;
 			x = LOWORD(lParam);
 			y = HIWORD(lParam);
 			hdc = GetDC(hwnd);
+			HPEN pen = CreatePen(PS_DASHDOTDOT, 1, RGB(139, 0, 255));;
+			HBRUSH br = CreateHatchBrush(HS_DIAGCROSS, RGB(255, 255, 0));
 			SelectObject(hdc, pen);
 			SelectObject(hdc, br);
 			Ellipse(hdc, x - 50, y - 50, x + 50, y + 50);
+			DeleteObject(pen);
+			DeleteObject(br);
 			ReleaseDC(hwnd, hdc);
-			p = new ellList;
-			p->L.x = x;
-			p->L.y = y;
-			add(pFirst, p);
 		}
 		EndPaint(hwnd, &ps);
 		break;
-	case WM_PAINT:
+	case WM_PAINT:  
 		hdc = BeginPaint(hwnd, &ps);
 		p = pFirst;
-		while (p)
+		while (p) 
 		{
-			hdc = GetDC(hwnd);
-			SelectObject(hdc, pen);
-			SelectObject(hdc, br);			
-			Ellipse(hdc, p->L.x-50, p->L.y-50, p->L.x+50, p->L.y+50);
+			SelectObject(hdc, pW);
+			SelectObject(hdc, pB);
+			MoveToEx(hdc, p->L.x1, p->L.y1, (LPPOINT)NULL);
+			Rectangle(hdc, p->L.x1, p->L.y1, p->L.x2, p->L.y2);
 			p = p->pNext;
 		}
 		EndPaint(hwnd, &ps);
 		break;
-	case WM_DESTROY:
+
+	case WM_DESTROY: 
 		PostQuitMessage(0);
 		break;
+
 	default:
+		
 		return DefWindowProc(hwnd, message, wParam, lParam);
 	}
 	return 0;
